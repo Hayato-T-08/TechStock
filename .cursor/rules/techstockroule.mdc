@@ -1,0 +1,49 @@
+---
+description: 
+globs: 
+alwaysApply: true
+---
+# TechStock プロジェクトのルール
+
+## プロジェクト構成
+
+- フロントエンド: Next.js (SSG) + App Router
+  - CloudFront + S3 へデプロイ
+  - @frontend/
+
+- バックエンド: Hono + AWS Lambda + API Gateway + DynamoDB
+  - @backend/
+
+- インフラストラクチャ: AWS CDK
+  - @infrastructure/
+
+## 開発ガイドライン
+
+### 全般
+
+- TypeScriptを使用してコードを記述する
+- ESLintとPrettierでコードスタイルを統一する
+- RESTful APIデザインに従う
+- 環境変数は`.env`ファイルで管理し、`.gitignore`に追加する
+
+### フロントエンド
+
+- Next.js 15.x + App Router構成
+- ビルド時に静的サイト生成(SSG)を使用
+- コンポーネントは関数コンポーネントで作成
+- スタイリングにはTailwind CSSを使用
+- APIリクエストは専用のサービスクラスで管理
+
+### バックエンド
+
+- Honoフレームワークでサーバーレス関数を作成
+- AWSのLambda関数として実行
+- DynamoDBをデータストアとして使用
+- API GatewayでRESTful APIとして公開
+
+### インフラストラクチャ
+
+- AWSリソースはすべてCDKで定義
+- 環境ごとに分離されたスタックを作成
+- セキュリティベストプラクティスに従う
+- コスト最適化を考慮した設計 
