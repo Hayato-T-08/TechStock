@@ -1,0 +1,27 @@
+{
+  "devDependencies": {
+    "@eslint/js": "^9.22.0",
+    "eslint": "^9.22.0",
+    "eslint-plugin-react": "^7.37.4",
+    "globals": "^16.0.0",
+    "husky": "^9.1.7",
+    "lint-staged": "^15.5.0",
+    "prettier": "^3.5.3",
+    "typescript-eslint": "^8.26.1"
+  },
+  "scripts": {
+    "prepare": "husky",
+    "lint": "eslint --fix",
+    "format": "prettier --write",
+    "lint-staged": "lint-staged"
+  },
+  "lint-staged": {
+    "*.{js,jsx,ts,tsx}": [
+      "npm run lint",
+      "npm run format"
+    ],
+    "*.{json,md}": [
+      "npm run format"
+    ]
+  }
+}
