@@ -1,18 +1,184 @@
 'use client';
 
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
+import { Article } from '../../../types/Article';
 import { mockArticles } from './mockData';
 
 export default function ArticleList() {
     const [searchQuery, setSearchQuery] = useState('');
+    const [articles, setArticles] = useState<Article[]>([]);
+    const [showModal, setShowModal] = useState(false);
+    const [editingArticle, setEditingArticle] = useState<Partial<Article>>({
+        title: '',
+        url: '',
+        tags: [],
+        source: '',
+    });
+    const [isEditing, setIsEditing] = useState(false);
+    const [tagInput, setTagInput] = useState('');
+    const [isLoading, setIsLoading] = useState(true);
 
-    const filteredArticles = mockArticles.filter(
+    // ページネーション用の状態
+    const [currentPage, setCurrentPage] = useState(1);
+    const [articlesPerPage] = useState(5);
+
+    // ローカルストレージからデータを読み込む
+    useEffect(() => {
+        const loadArticles = () => {
+            const savedArticles = localStorage.getItem('techstock_articles');
+            if (savedArticles) {
+                setArticles(JSON.parse(savedArticles));
+            } else {
+                // 初期データがない場合はモックデータを使用
+                setArticles(mockArticles);
+                localStorage.setItem(
+                    'techstock_articles',
+                    JSON.stringify(mockArticles)
+                );
+            }
+            setIsLoading(false);
+        };
+
+        loadArticles();
+    }, []);
+
+    // 記事データが変更されたらローカルストレージに保存
+    useEffect(() => {
+        if (!isLoading) {
+            localStorage.setItem(
+                'techstock_articles',
+                JSON.stringify(articles)
+            );
+        }
+    }, [articles, isLoading]);
+
+    // 検索条件に一致する記事をフィルタリング
+    const filteredArticles = articles.filter(
         (article) =>
             article.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
             article.tags.some((tag) =>
                 tag.toLowerCase().includes(searchQuery.toLowerCase())
             )
     );
+
+    // 検索クエリが変更されたらページをリセット
+    useEffect(() => {
+        setCurrentPage(1);
+    }, [searchQuery]);
+
+    // 現在のページの記事を取得
+    const indexOfLastArticle = currentPage * articlesPerPage;
+    const indexOfFirstArticle = indexOfLastArticle - articlesPerPage;
+    const currentArticles = filteredArticles.slice(
+        indexOfFirstArticle,
+        indexOfLastArticle
+    );
+
+    // 総ページ数を計算
+    const totalPages = Math.ceil(filteredArticles.length / articlesPerPage);
+
+    // ページネーションナビゲーションの生成
+    const renderPagination = () => {
+        if (totalPages <= 1) return null;
+
+        const pageNumbers = [];
+        const maxPagesToShow = 5;
+        let startPage = Math.max(
+            1,
+            currentPage - Math.floor(maxPagesToShow / 2)
+        );
+        const endPage = Math.min(totalPages, startPage + maxPagesToShow - 1);
+
+        if (endPage - startPage + 1 < maxPagesToShow) {
+            startPage = Math.max(1, endPage - maxPagesToShow + 1);
+        }
+
+        for (let i = startPage; i <= endPage; i++) {
+            pageNumbers.push(i);
+        }
+
+        return (
+            <div className="flex justify-center mt-6">
+                <nav className="inline-flex rounded-md shadow">
+                    <button
+                        onClick={() =>
+                            setCurrentPage((prev) => Math.max(prev - 1, 1))
+                        }
+                        disabled={currentPage === 1}
+                        className={`px-3 py-1 rounded-l-md ${
+                            currentPage === 1
+                                ? 'bg-gray-100 text-gray-400 cursor-not-allowed'
+                                : 'bg-white text-gray-700 hover:bg-gray-50'
+                        } border border-gray-300`}
+                    >
+                        &lt;
+                    </button>
+
+                    {startPage > 1 && (
+                        <>
+                            <button
+                                onClick={() => setCurrentPage(1)}
+                                className="px-3 py-1 bg-white text-gray-700 hover:bg-gray-50 border-t border-b border-gray-300"
+                            >
+                                1
+                            </button>
+                            {startPage > 2 && (
+                                <span className="px-3 py-1 bg-white text-gray-700 border-t border-b border-gray-300">
+                                    ...
+                                </span>
+                            )}
+                        </>
+                    )}
+
+                    {pageNumbers.map((number) => (
+                        <button
+                            key={number}
+                            onClick={() => setCurrentPage(number)}
+                            className={`px-3 py-1 ${
+                                currentPage === number
+                                    ? 'bg-blue-500 text-white'
+                                    : 'bg-white text-gray-700 hover:bg-gray-50'
+                            } border-t border-b border-gray-300`}
+                        >
+                            {number}
+                        </button>
+                    ))}
+
+                    {endPage < totalPages && (
+                        <>
+                            {endPage < totalPages - 1 && (
+                                <span className="px-3 py-1 bg-white text-gray-700 border-t border-b border-gray-300">
+                                    ...
+                                </span>
+                            )}
+                            <button
+                                onClick={() => setCurrentPage(totalPages)}
+                                className="px-3 py-1 bg-white text-gray-700 hover:bg-gray-50 border-t border-b border-gray-300"
+                            >
+                                {totalPages}
+                            </button>
+                        </>
+                    )}
+
+                    <button
+                        onClick={() =>
+                            setCurrentPage((prev) =>
+                                Math.min(prev + 1, totalPages)
+                            )
+                        }
+                        disabled={currentPage === totalPages}
+                        className={`px-3 py-1 rounded-r-md ${
+                            currentPage === totalPages
+                                ? 'bg-gray-100 text-gray-400 cursor-not-allowed'
+                                : 'bg-white text-gray-700 hover:bg-gray-50'
+                        } border border-gray-300`}
+                    >
+                        &gt;
+                    </button>
+                </nav>
+            </div>
+        );
+    };
 
     const formatDate = (dateString: string) => {
         const date = new Date(dateString);
@@ -23,9 +189,135 @@ export default function ArticleList() {
         });
     };
 
+    const handleDelete = (id: string) => {
+        if (confirm('この記事を削除してもよろしいですか？')) {
+            setArticles(articles.filter((article) => article.id !== id));
+
+            // 現在のページの記事がすべて削除された場合、前のページに戻る
+            if (currentArticles.length === 1 && currentPage > 1) {
+                setCurrentPage(currentPage - 1);
+            }
+        }
+    };
+
+    const handleEdit = (article: Article) => {
+        setEditingArticle({ ...article });
+        setIsEditing(true);
+        setShowModal(true);
+    };
+
+    const handleAddTag = () => {
+        if (
+            tagInput.trim() &&
+            !editingArticle.tags?.includes(tagInput.trim())
+        ) {
+            setEditingArticle({
+                ...editingArticle,
+                tags: [...(editingArticle.tags || []), tagInput.trim()],
+            });
+            setTagInput('');
+        }
+    };
+
+    const handleRemoveTag = (tag: string) => {
+        setEditingArticle({
+            ...editingArticle,
+            tags: editingArticle.tags?.filter((t) => t !== tag),
+        });
+    };
+
+    const handleAddNew = () => {
+        setEditingArticle({
+            title: '',
+            url: '',
+            tags: [],
+            source: '',
+        });
+        setIsEditing(false);
+        setShowModal(true);
+    };
+
+    const handleSubmit = () => {
+        if (!editingArticle.title || !editingArticle.url) {
+            alert('タイトルとURLは必須です');
+            return;
+        }
+
+        if (isEditing) {
+            // 更新
+            setArticles(
+                articles.map((article) =>
+                    article.id === editingArticle.id
+                        ? ({ ...article, ...editingArticle } as Article)
+                        : article
+                )
+            );
+        } else {
+            // 新規追加
+            const newId =
+                articles.length > 0
+                    ? (
+                          Math.max(...articles.map((a) => parseInt(a.id))) + 1
+                      ).toString()
+                    : '1';
+
+            const createdAt = new Date().toISOString().split('T')[0];
+
+            const articleToAdd: Article = {
+                id: newId,
+                title: editingArticle.title,
+                url: editingArticle.url,
+                source: editingArticle.source || '不明',
+                tags: editingArticle.tags || [],
+                createdAt,
+            };
+
+            setArticles([articleToAdd, ...articles]);
+            setCurrentPage(1); // 新規追加時は1ページ目に戻る
+        }
+
+        setEditingArticle({
+            title: '',
+            url: '',
+            tags: [],
+            source: '',
+        });
+        setShowModal(false);
+    };
+
+    if (isLoading) {
+        return (
+            <div className="max-w-4xl mx-auto py-8 px-4 flex justify-center items-center">
+                <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-blue-500"></div>
+            </div>
+        );
+    }
+
     return (
         <div className="max-w-4xl mx-auto py-8 px-4">
-            <h1 className="text-3xl font-bold mb-6">技術記事一覧</h1>
+            <div className="flex justify-between items-center mb-6">
+                <h1 className="text-3xl font-bold">技術記事一覧</h1>
+                <button
+                    onClick={handleAddNew}
+                    className="bg-blue-600 text-white px-4 py-2 rounded-md hover:bg-blue-700 transition-colors flex items-center"
+                >
+                    <svg
+                        className="w-5 h-5 mr-1"
+                        fill="none"
+                        stroke="currentColor"
+                        viewBox="0 0 24 24"
+                        xmlns="http://www.w3.org/2000/svg"
+                    >
+                        <path
+                            strokeLinecap="round"
+                            strokeLinejoin="round"
+                            strokeWidth={2}
+                            d="M12 6v6m0 0v6m0-6h6m-6 0H6"
+                        />
+                    </svg>
+                    記事を追加
+                </button>
+            </div>
 
             <div className="relative mb-8">
                 <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
@@ -50,12 +342,23 @@ export default function ArticleList() {
                 />
             </div>
 
+            <div className="mb-4 text-sm text-gray-500">
+                {filteredArticles.length > 0 && (
+                    <p>
+                        全{filteredArticles.length}件中{' '}
+                        {indexOfFirstArticle + 1}〜
+                        {Math.min(indexOfLastArticle, filteredArticles.length)}
+                        件を表示
+                    </p>
+                )}
+            </div>
+
             <div className="space-y-4">
-                {filteredArticles.length > 0 ? (
-                    filteredArticles.map((article) => (
+                {currentArticles.length > 0 ? (
+                    currentArticles.map((article) => (
                         <div
                             key={article.id}
-                            className="p-5 bg-white rounded-md shadow-md hover:shadow-lg hover:-translate-y-1 transition-all duration-200"
+                            className="p-5 bg-white rounded-md shadow-md hover:shadow-lg transition-all duration-200"
                         >
                             <div className="flex justify-between items-center mb-2">
                                 <a
@@ -75,9 +378,51 @@ export default function ArticleList() {
                                         <path d="M5 5a2 2 0 00-2 2v8a2 2 0 002 2h8a2 2 0 002-2v-3a1 1 0 10-2 0v3H5V7h3a1 1 0 000-2H5z" />
                                     </svg>
                                 </a>
-                                <span className="text-sm text-gray-500">
-                                    {formatDate(article.createdAt)}
-                                </span>
+                                <div className="flex items-center">
+                                    <span className="text-sm text-gray-500 mr-3">
+                                        {formatDate(article.createdAt)}
+                                    </span>
+                                    <button
+                                        onClick={() => handleEdit(article)}
+                                        className="text-blue-500 hover:text-blue-700 mr-2"
+                                        aria-label="記事を編集"
+                                    >
+                                        <svg
+                                            className="w-5 h-5"
+                                            fill="none"
+                                            stroke="currentColor"
+                                            viewBox="0 0 24 24"
+                                            xmlns="http://www.w3.org/2000/svg"
+                                        >
+                                            <path
+                                                strokeLinecap="round"
+                                                strokeLinejoin="round"
+                                                strokeWidth={2}
+                                                d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"
+                                            />
+                                        </svg>
+                                    </button>
+                                    <button
+                                        onClick={() => handleDelete(article.id)}
+                                        className="text-red-500 hover:text-red-700"
+                                        aria-label="記事を削除"
+                                    >
+                                        <svg
+                                            className="w-5 h-5"
+                                            fill="none"
+                                            stroke="currentColor"
+                                            viewBox="0 0 24 24"
+                                            xmlns="http://www.w3.org/2000/svg"
+                                        >
+                                            <path
+                                                strokeLinecap="round"
+                                                strokeLinejoin="round"
+                                                strokeWidth={2}
+                                                d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"
+                                            />
+                                        </svg>
+                                    </button>
+                                </div>
                             </div>
 
                             <p className="text-sm text-gray-600 mb-3">
@@ -102,6 +447,164 @@ export default function ArticleList() {
                     </div>
                 )}
             </div>
+
+            {/* ページネーション */}
+            {renderPagination()}
+
+            {/* 記事追加・編集モーダル */}
+            {showModal && (
+                <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+                    <div className="bg-white rounded-lg p-6 max-w-md w-full">
+                        <h2 className="text-xl font-bold mb-4">
+                            {isEditing ? '記事を編集' : '記事を追加'}
+                        </h2>
+
+                        <div className="mb-4">
+                            <label
+                                className="block text-gray-700 text-sm font-bold mb-2"
+                                htmlFor="title"
+                            >
+                                タイトル *
+                            </label>
+                            <input
+                                id="title"
+                                type="text"
+                                className="w-full px-3 py-2 border border-gray-300 rounded-md"
+                                value={editingArticle.title}
+                                onChange={(e) =>
+                                    setEditingArticle({
+                                        ...editingArticle,
+                                        title: e.target.value,
+                                    })
+                                }
+                                placeholder="記事のタイトル"
+                            />
+                        </div>
+
+                        <div className="mb-4">
+                            <label
+                                className="block text-gray-700 text-sm font-bold mb-2"
+                                htmlFor="url"
+                            >
+                                URL *
+                            </label>
+                            <input
+                                id="url"
+                                type="url"
+                                className="w-full px-3 py-2 border border-gray-300 rounded-md"
+                                value={editingArticle.url}
+                                onChange={(e) =>
+                                    setEditingArticle({
+                                        ...editingArticle,
+                                        url: e.target.value,
+                                    })
+                                }
+                                placeholder="https://example.com"
+                            />
+                        </div>
+
+                        <div className="mb-4">
+                            <label
+                                className="block text-gray-700 text-sm font-bold mb-2"
+                                htmlFor="source"
+                            >
+                                出典
+                            </label>
+                            <input
+                                id="source"
+                                type="text"
+                                className="w-full px-3 py-2 border border-gray-300 rounded-md"
+                                value={editingArticle.source}
+                                onChange={(e) =>
+                                    setEditingArticle({
+                                        ...editingArticle,
+                                        source: e.target.value,
+                                    })
+                                }
+                                placeholder="記事の出典"
+                            />
+                        </div>
+
+                        <div className="mb-4">
+                            <label
+                                className="block text-gray-700 text-sm font-bold mb-2"
+                                htmlFor="tags"
+                            >
+                                タグ
+                            </label>
+                            <div className="flex">
+                                <input
+                                    id="tags"
+                                    type="text"
+                                    className="flex-1 px-3 py-2 border border-gray-300 rounded-l-md"
+                                    value={tagInput}
+                                    onChange={(e) =>
+                                        setTagInput(e.target.value)
+                                    }
+                                    placeholder="タグを入力"
+                                    onKeyPress={(e) =>
+                                        e.key === 'Enter' &&
+                                        (e.preventDefault(), handleAddTag())
+                                    }
+                                />
+                                <button
+                                    type="button"
+                                    onClick={handleAddTag}
+                                    className="bg-gray-200 text-gray-700 px-3 py-2 rounded-r-md hover:bg-gray-300"
+                                >
+                                    追加
+                                </button>
+                            </div>
+                            <div className="flex flex-wrap mt-2">
+                                {editingArticle.tags?.map((tag) => (
+                                    <span
+                                        key={tag}
+                                        className="m-1 px-2 py-1 text-xs bg-gray-100 text-gray-600 rounded flex items-center"
+                                    >
+                                        {tag}
+                                        <button
+                                            onClick={() => handleRemoveTag(tag)}
+                                            className="ml-1 text-gray-500 hover:text-gray-700"
+                                        >
+                                            <svg
+                                                className="w-3 h-3"
+                                                fill="none"
+                                                stroke="currentColor"
+                                                viewBox="0 0 24 24"
+                                                xmlns="http://www.w3.org/2000/svg"
+                                            >
+                                                <path
+                                                    strokeLinecap="round"
+                                                    strokeLinejoin="round"
+                                                    strokeWidth={2}
+                                                    d="M6 18L18 6M6 6l12 12"
+                                                />
+                                            </svg>
+                                        </button>
+                                    </span>
+                                ))}
+                            </div>
+                        </div>
+
+                        <div className="flex justify-end mt-6">
+                            <button
+                                type="button"
+                                onClick={() => setShowModal(false)}
+                                className="bg-gray-200 text-gray-700 px-4 py-2 rounded-md mr-2 hover:bg-gray-300"
+                            >
+                                キャンセル
+                            </button>
+                            <button
+                                type="button"
+                                onClick={handleSubmit}
+                                className="bg-blue-600 text-white px-4 py-2 rounded-md hover:bg-blue-700"
+                            >
+                                {isEditing ? '更新' : '保存'}
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            )}
         </div>
     );
 }

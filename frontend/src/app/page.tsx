@@ -23,9 +23,6 @@ export default function Home() {
                         </svg>
                         記事一覧を見る
                     </Link>
-                    <button className="bg-gray-100 text-gray-800 px-6 py-3 rounded-md font-medium shadow-sm hover:bg-gray-200 transition-colors">
-                        始める
-                    </button>
                 </div>
             </div>
 
