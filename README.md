@@ -22,6 +22,7 @@ TechStock/
 ### 前提条件
 
 -   Node.js 18 以上
+-   Docker と Docker Compose
 -   AWS CLI のセットアップとプロファイル設定
 -   AWS CDK のインストール
 
@@ -58,6 +59,15 @@ TechStock/
     npm run cdk deploy
     ```
 
-## ライセンス
+### ローカル開発環境
 
-MIT
+ローカルで DynamoDB を使用して開発する場合は、Docker Compose を使ってローカル環境を起動できます：
+
+```bash
+docker-compose up -d
+```
+
+これにより以下のサービスが起動します：
+
+-   **DynamoDB Local**: `http://localhost:8000` - ローカル DynamoDB エミュレーター
+-   **DynamoDB Admin**: `http://localhost:8001` - DynamoDB の管理ウェブインターフェース
