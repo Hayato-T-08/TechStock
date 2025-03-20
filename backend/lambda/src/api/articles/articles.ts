@@ -27,6 +27,9 @@ const ArticleSchema = z.object({
 // 更新用スキーマ - idフィールドを除外し、すべてのフィールドをオプションに
 const ArticleUpdateSchema = ArticleSchema.partial().omit({ id: true });
 
+// 記事作成用スキーマ - idとcreatedAtをオプションにする
+const ArticleCreateSchema = ArticleSchema.omit({ id: true, createdAt: true });
+
 const getCurrentTimestamp = () => {
   return new Date().toISOString();
 };
@@ -41,7 +44,6 @@ const articles = new Hono()
   .get('/search', async (c) => {
     const titleQuery = c.req.query('title') || '';
     const tagQuery = c.req.query('tag') || '';
-
     // スキャンパラメータを設定
     const params: {
       TableName: string;
@@ -147,13 +149,13 @@ const articles = new Hono()
     }
   })
   // 記事の作成
-  .post('/', zValidator('json', ArticleSchema), async (c) => {
+  .post('/', zValidator('json', ArticleCreateSchema), async (c) => {
     const article = c.req.valid('json');
     const timestamp = getCurrentTimestamp();
 
     const newArticle = {
       ...article,
-      id: article.id || uuidv4(), // IDがない場合は自動生成
+      id: uuidv4(), // 常に新しいIDを生成
       createdAt: timestamp,
       updatedAt: timestamp,
       // 小文字変換フィールドを追加

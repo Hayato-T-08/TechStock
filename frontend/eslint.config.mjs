@@ -19,6 +19,11 @@ const frontendSpecificConfig = [
       globals: {
         ...globals.browser,
       },
+      parserOptions: {
+        ecmaFeatures: {
+          jsx: true,
+        },
+      },
     },
     rules: {
       "react/react-in-jsx-scope": "off",
@@ -26,7 +31,16 @@ const frontendSpecificConfig = [
   },
 ];
 
+// 明示的にルールをオーバーライド
+const overrideRules = {
+  ignores: ["node_modules/**/*"],
+  rules: {
+    "react/react-in-jsx-scope": "off",
+  },
+};
+
 export default [
   ...nextConfig,
   ...frontendSpecificConfig,
+  overrideRules,
 ];
