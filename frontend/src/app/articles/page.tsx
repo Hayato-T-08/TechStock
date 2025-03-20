@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { Article } from '../../../types/Article';
 import {
   createArticle,
@@ -12,8 +12,10 @@ import {
 import { mockArticles } from './mockData';
 
 export default function ArticleList() {
-  const [searchQuery, setSearchQuery] = useState('');
-  const [articles, setArticles] = useState<Article[]>([]);
+  const [titleQuery, setTitleQuery] = useState('');
+  const [tagQuery, setTagQuery] = useState('');
+  const [allArticles, setAllArticles] = useState<Article[]>([]);
+  const [searchResults, setSearchResults] = useState<Article[]>([]);
   const [showModal, setShowModal] = useState(false);
   const [editingArticle, setEditingArticle] = useState<Partial<Article>>({
     title: '',
@@ -24,6 +26,7 @@ export default function ArticleList() {
   const [isEditing, setIsEditing] = useState(false);
   const [tagInput, setTagInput] = useState('');
   const [isLoading, setIsLoading] = useState(true);
+  const [isSearching, setIsSearching] = useState(false);
 
   // ページネーション用の状態
   const [currentPage, setCurrentPage] = useState(1);
@@ -35,11 +38,13 @@ export default function ArticleList() {
       setIsLoading(true);
       try {
         const articlesData = await fetchArticles();
-        setArticles(articlesData);
+        setAllArticles(articlesData);
+        setSearchResults(articlesData);
       } catch (error) {
         console.error('記事の取得に失敗しました:', error);
         // APIからの取得に失敗した場合はモックデータを使用
-        setArticles(mockArticles);
+        setAllArticles(mockArticles);
+        setSearchResults(mockArticles);
       } finally {
         setIsLoading(false);
       }
@@ -48,59 +53,61 @@ export default function ArticleList() {
     loadArticles();
   }, []);
 
-  // 検索機能の実装
+  // タイトル検索ハンドラー
+  const handleTitleQueryChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    setTitleQuery(e.target.value);
+  };
+
+  // タグ検索ハンドラー
+  const handleTagQueryChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    setTagQuery(e.target.value);
+  };
+
+  // API検索（デバウンス付き）
   useEffect(() => {
-    const searchForArticles = async () => {
-      if (!searchQuery.trim()) {
-        // 検索クエリが空の場合は全記事を取得
-        const allArticles = await fetchArticles();
-        setArticles(allArticles);
+    const searchFromAPI = async () => {
+      // 検索クエリが両方とも空の場合は全記事を表示
+      if (!titleQuery.trim() && !tagQuery.trim()) {
+        setSearchResults(allArticles);
         return;
       }
 
-      setIsLoading(true);
+      setIsSearching(true);
       try {
-        // タイトルとタグの両方で検索
         const results = await searchArticles({
-          title: searchQuery,
-          tag: searchQuery,
+          title: titleQuery.trim() || undefined,
+          tag: tagQuery.trim() || undefined,
         });
-        setArticles(results);
+        setSearchResults(results);
       } catch (error) {
         console.error('記事の検索に失敗しました:', error);
       } finally {
-        setIsLoading(false);
+        setIsSearching(false);
       }
     };
 
-    // 検索クエリが変更された場合にAPIを呼び出す
-    // デバウンスを実装して頻繁なAPI呼び出しを防止
+    // APIデバウンスの時間を長めに設定（ユーザーが入力を完了した可能性が高いタイミング）
     const debounceTimeout = setTimeout(() => {
-      searchForArticles();
-    }, 500);
+      searchFromAPI();
+    }, 800); // 800ms
 
     return () => clearTimeout(debounceTimeout);
-  }, [searchQuery]);
-
-  // 検索条件に一致する記事をフィルタリング
-  const filteredArticles = articles.filter(
-    (article) =>
-      article.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      article.tags.some((tag) => tag.toLowerCase().includes(searchQuery.toLowerCase()))
-  );
+  }, [titleQuery, tagQuery, allArticles]);
 
   // 検索クエリが変更されたらページをリセット
   useEffect(() => {
     setCurrentPage(1);
-  }, [searchQuery]);
+  }, [titleQuery, tagQuery]);
 
   // 現在のページの記事を取得
   const indexOfLastArticle = currentPage * articlesPerPage;
   const indexOfFirstArticle = indexOfLastArticle - articlesPerPage;
-  const currentArticles = filteredArticles.slice(indexOfFirstArticle, indexOfLastArticle);
+  const currentArticles = useMemo(() => {
+    return searchResults.slice(indexOfFirstArticle, indexOfLastArticle);
+  }, [searchResults, indexOfFirstArticle, indexOfLastArticle]);
 
   // 総ページ数を計算
-  const totalPages = Math.ceil(filteredArticles.length / articlesPerPage);
+  const totalPages = Math.ceil(searchResults.length / articlesPerPage);
 
   // ページネーションナビゲーションの生成
   const renderPagination = () => {
@@ -210,7 +217,19 @@ export default function ArticleList() {
       try {
         const success = await deleteArticle(id);
         if (success) {
-          setArticles(articles.filter((article) => article.id !== id));
+          const updatedArticles = allArticles.filter((article) => article.id !== id);
+          setAllArticles(updatedArticles);
+
+          // 検索クエリが空の場合は全記事を表示、そうでなければ再検索
+          if (!titleQuery.trim() && !tagQuery.trim()) {
+            setSearchResults(updatedArticles);
+          } else {
+            const results = await searchArticles({
+              title: titleQuery.trim() || undefined,
+              tag: tagQuery.trim() || undefined,
+            });
+            setSearchResults(results);
+          }
 
           // 現在のページの記事がすべて削除された場合、前のページに戻る
           if (currentArticles.length === 1 && currentPage > 1) {
@@ -258,6 +277,12 @@ export default function ArticleList() {
     setShowModal(true);
   };
 
+  const handleClearSearch = () => {
+    setTitleQuery('');
+    setTagQuery('');
+    setSearchResults(allArticles);
+  };
+
   const handleSubmit = async () => {
     if (!editingArticle.title || !editingArticle.url) {
       alert('タイトルとURLは必須です');
@@ -275,9 +300,21 @@ export default function ArticleList() {
         });
 
         if (updatedArticle) {
-          setArticles(
-            articles.map((article) => (article.id === editingArticle.id ? updatedArticle : article))
+          const updatedArticles = allArticles.map((article) =>
+            article.id === editingArticle.id ? updatedArticle : article
           );
+          setAllArticles(updatedArticles);
+
+          // 検索クエリが空の場合は全記事を表示、そうでなければ再検索
+          if (!titleQuery.trim() && !tagQuery.trim()) {
+            setSearchResults(updatedArticles);
+          } else {
+            const results = await searchArticles({
+              title: titleQuery.trim() || undefined,
+              tag: tagQuery.trim() || undefined,
+            });
+            setSearchResults(results);
+          }
         }
       } else {
         // 新規作成
@@ -289,7 +326,19 @@ export default function ArticleList() {
         });
 
         if (newArticle) {
-          setArticles([...articles, newArticle]);
+          const updatedArticles = [...allArticles, newArticle];
+          setAllArticles(updatedArticles);
+
+          // 検索クエリが空の場合は全記事を表示、そうでなければ再検索
+          if (!titleQuery.trim() && !tagQuery.trim()) {
+            setSearchResults(updatedArticles);
+          } else {
+            const results = await searchArticles({
+              title: titleQuery.trim() || undefined,
+              tag: tagQuery.trim() || undefined,
+            });
+            setSearchResults(results);
+          }
         }
       }
 
@@ -334,35 +383,90 @@ export default function ArticleList() {
         </button>
       </div>
 
-      <div className="relative mb-8">
-        <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-          <svg
-            className="h-5 w-5 text-gray-400"
-            xmlns="http://www.w3.org/2000/svg"
-            viewBox="0 0 20 20"
-            fill="currentColor"
-          >
-            <path
-              fillRule="evenodd"
-              d="M8 4a4 4 0 100 8 4 4 0 000-8zM2 8a6 6 0 1110.89 3.476l4.817 4.817a1 1 0 01-1.414 1.414l-4.816-4.816A6 6 0 012 8z"
-              clipRule="evenodd"
-            />
-          </svg>
+      <div className="space-y-4 mb-6">
+        <div className="relative">
+          <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+            <svg
+              className="h-5 w-5 text-gray-400"
+              xmlns="http://www.w3.org/2000/svg"
+              viewBox="0 0 20 20"
+              fill="currentColor"
+            >
+              <path
+                fillRule="evenodd"
+                d="M8 4a4 4 0 100 8 4 4 0 000-8zM2 8a6 6 0 1110.89 3.476l4.817 4.817a1 1 0 01-1.414 1.414l-4.816-4.816A6 6 0 012 8z"
+                clipRule="evenodd"
+              />
+            </svg>
+          </div>
+          <input
+            className="block w-full pl-10 pr-3 py-2 border border-gray-300 rounded-md shadow-sm bg-white focus:outline-none focus:ring-indigo-500 focus:border-indigo-500"
+            placeholder="タイトルで検索..."
+            value={titleQuery}
+            onChange={handleTitleQueryChange}
+          />
         </div>
-        <input
-          className="block w-full pl-10 pr-3 py-2 border border-gray-300 rounded-md shadow-sm bg-white focus:outline-none focus:ring-indigo-500 focus:border-indigo-500"
-          placeholder="記事タイトルやタグで検索..."
-          value={searchQuery}
-          onChange={(e) => setSearchQuery(e.target.value)}
-        />
+
+        <div className="relative">
+          <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+            <svg
+              className="h-5 w-5 text-gray-400"
+              xmlns="http://www.w3.org/2000/svg"
+              viewBox="0 0 20 20"
+              fill="currentColor"
+            >
+              <path
+                fillRule="evenodd"
+                d="M17.707 9.293a1 1 0 010 1.414l-7 7a1 1 0 01-1.414 0l-7-7A.997.997 0 012 10V5a3 3 0 013-3h5c.256 0 .512.098.707.293l7 7zM5 6a1 1 0 100-2 1 1 0 000 2z"
+                clipRule="evenodd"
+              />
+            </svg>
+          </div>
+          <input
+            className="block w-full pl-10 pr-3 py-2 border border-gray-300 rounded-md shadow-sm bg-white focus:outline-none focus:ring-indigo-500 focus:border-indigo-500"
+            placeholder="タグで検索..."
+            value={tagQuery}
+            onChange={handleTagQueryChange}
+          />
+        </div>
+
+        {(titleQuery || tagQuery) && (
+          <div className="flex justify-end">
+            <button
+              onClick={handleClearSearch}
+              className="text-gray-500 hover:text-gray-700 flex items-center"
+            >
+              <svg
+                className="w-4 h-4 mr-1"
+                fill="none"
+                stroke="currentColor"
+                viewBox="0 0 24 24"
+                xmlns="http://www.w3.org/2000/svg"
+              >
+                <path
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  strokeWidth={2}
+                  d="M6 18L18 6M6 6l12 12"
+                />
+              </svg>
+              検索をクリア
+            </button>
+          </div>
+        )}
       </div>
 
       <div className="mb-4 text-sm text-gray-500">
-        {filteredArticles.length > 0 && (
+        {searchResults.length > 0 && (
           <p>
-            全{filteredArticles.length}件中 {indexOfFirstArticle + 1}〜
-            {Math.min(indexOfLastArticle, filteredArticles.length)}
+            全{searchResults.length}件中 {indexOfFirstArticle + 1}〜
+            {Math.min(indexOfLastArticle, searchResults.length)}
             件を表示
+            {isSearching && (
+              <span className="ml-2 inline-block">
+                <span className="animate-pulse">検索中...</span>
+              </span>
+            )}
           </p>
         )}
       </div>
@@ -445,7 +549,8 @@ export default function ArticleList() {
                 {article.tags.map((tag) => (
                   <span
                     key={tag}
-                    className="m-1 px-2 py-1 text-xs bg-gray-100 text-gray-600 rounded"
+                    className="m-1 px-2 py-1 text-xs bg-gray-100 text-gray-600 rounded cursor-pointer hover:bg-gray-200"
+                    onClick={() => setTagQuery(tag)}
                   >
                     {tag}
                   </span>

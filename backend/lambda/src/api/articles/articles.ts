@@ -44,7 +44,6 @@ const articles = new Hono()
   .get('/search', async (c) => {
     const titleQuery = c.req.query('title') || '';
     const tagQuery = c.req.query('tag') || '';
-
     // スキャンパラメータを設定
     const params: {
       TableName: string;
