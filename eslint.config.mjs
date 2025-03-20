@@ -32,6 +32,15 @@ const frontendConfig = [
       globals: {
         ...globals.browser,
       },
+      parserOptions: {
+        ecmaFeatures: {
+          jsx: true,
+        },
+      },
+    },
+    rules: {
+      // React 17以降ではReactのインポートが不要
+      "react/react-in-jsx-scope": "off",
     },
   },
   pluginReact.configs.flat.recommended,
@@ -53,9 +62,18 @@ const backendConfig = [
   },
 ];
 
+// 明示的にフロントエンドのJSXルールをオーバーライド
+const overrideRules = {
+  files: ["frontend/**/*.{jsx,tsx}"],
+  rules: {
+    "react/react-in-jsx-scope": "off",
+  },
+};
+
 // すべての設定をエクスポート
 export default [
   ...baseConfig,
   ...frontendConfig,
   ...backendConfig,
+  overrideRules,
 ];
