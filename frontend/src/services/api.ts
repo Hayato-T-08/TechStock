@@ -82,10 +82,7 @@ export async function createArticle(
     const response = await fetch(`${API_URL}/api/articles`, {
       ...fetchOptions,
       method: 'POST',
-      body: JSON.stringify({
-        ...article,
-        id: crypto.randomUUID(), // クライアント側でUUIDを生成
-      }),
+      body: JSON.stringify(article),
     });
 
     if (!response.ok) {
