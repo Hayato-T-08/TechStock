@@ -19,6 +19,9 @@ const ArticleSchema = z.object({
   tags: z.array(z.string()),
   source: z.string(),
   createdAt: z.string(),
+  // 小文字変換用の追加フィールド（オプション）
+  lower_case_title: z.string().optional(),
+  lower_case_tags: z.array(z.string()).optional(),
 });
 
 // 更新用スキーマ - idフィールドを除外し、すべてのフィールドをオプションに
@@ -26,6 +29,11 @@ const ArticleUpdateSchema = ArticleSchema.partial().omit({ id: true });
 
 const getCurrentTimestamp = () => {
   return new Date().toISOString();
+};
+
+// 文字列を小文字に変換する関数
+const toLowerCaseArray = (arr: string[]): string[] => {
+  return arr.map((item) => item.toLowerCase());
 };
 
 const articles = new Hono()
@@ -50,18 +58,17 @@ const articles = new Hono()
     const expressionAttributeValues: { [key: string]: unknown } = {};
 
     if (titleQuery) {
-      // DynamoDBは部分一致検索をネイティブにサポートしていないため、
-      // begins_with関数を使用して前方一致検索を実装
-      filterExpressions.push('begins_with(#title, :title)');
-      expressionAttributeNames['#title'] = 'title';
-      expressionAttributeValues[':title'] = titleQuery;
+      // 大文字小文字を区別しないタイトル検索（lower_case_titleを使用）
+      filterExpressions.push('begins_with(#lower_case_title, :lower_case_title)');
+      expressionAttributeNames['#lower_case_title'] = 'lower_case_title';
+      expressionAttributeValues[':lower_case_title'] = titleQuery.toLowerCase();
     }
 
-    // タグ検索条件を追加
+    // タグ検索条件を追加（小文字変換したタグで検索）
     if (tagQuery) {
-      filterExpressions.push('contains(#tags, :tag)');
-      expressionAttributeNames['#tags'] = 'tags';
-      expressionAttributeValues[':tag'] = tagQuery;
+      filterExpressions.push('contains(#lower_case_tags, :lower_case_tag)');
+      expressionAttributeNames['#lower_case_tags'] = 'lower_case_tags';
+      expressionAttributeValues[':lower_case_tag'] = tagQuery.toLowerCase();
     }
 
     // フィルタ式が存在する場合のみ追加
@@ -75,13 +82,12 @@ const articles = new Hono()
       const response = await docClient.send(new ScanCommand(params));
 
       // 完全な部分一致検索を実装するためのフィルタリング
-      // DynamoDBはネイティブに部分一致をサポートしていないため、
-      // アプリケーションレベルでフィルタリングを行う
+      // lower_case_titleフィールドを使っているので、すでに大文字小文字を区別しない検索になっている
       let results = response.Items || [];
 
       if (titleQuery && results.length > 0) {
         results = results.filter((item) =>
-          item.title.toLowerCase().includes(titleQuery.toLowerCase())
+          item.lower_case_title.includes(titleQuery.toLowerCase())
         );
       }
 
@@ -150,6 +156,9 @@ const articles = new Hono()
       id: article.id || uuidv4(), // IDがない場合は自動生成
       createdAt: timestamp,
       updatedAt: timestamp,
+      // 小文字変換フィールドを追加
+      lower_case_title: article.title.toLowerCase(),
+      lower_case_tags: toLowerCaseArray(article.tags),
     };
 
     const params = {
@@ -185,6 +194,11 @@ const articles = new Hono()
       updateFields.push('#title = :title');
       expressionAttributeNames['#title'] = 'title';
       expressionAttributeValues[':title'] = article.title;
+
+      // 小文字タイトルも更新
+      updateFields.push('#lower_case_title = :lower_case_title');
+      expressionAttributeNames['#lower_case_title'] = 'lower_case_title';
+      expressionAttributeValues[':lower_case_title'] = article.title.toLowerCase();
     }
 
     if (article.url !== undefined) {
@@ -197,6 +211,11 @@ const articles = new Hono()
       updateFields.push('#tags = :tags');
       expressionAttributeNames['#tags'] = 'tags';
       expressionAttributeValues[':tags'] = article.tags;
+
+      // 小文字タグも更新
+      updateFields.push('#lower_case_tags = :lower_case_tags');
+      expressionAttributeNames['#lower_case_tags'] = 'lower_case_tags';
+      expressionAttributeValues[':lower_case_tags'] = toLowerCaseArray(article.tags);
     }
 
     if (article.source !== undefined) {
