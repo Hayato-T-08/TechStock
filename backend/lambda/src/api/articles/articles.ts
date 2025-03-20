@@ -16,7 +16,7 @@ const ArticleSchema = z.object({
   id: z.string().uuid(),
   title: z.string(),
   url: z.string(),
-  tags: z.array(z.string()), //タグはStringSet型で保存するあとで変える
+  tags: z.array(z.string()),
   source: z.string(),
   createdAt: z.string(),
 });
@@ -145,9 +145,6 @@ const articles = new Hono()
     const article = c.req.valid('json');
     const timestamp = getCurrentTimestamp();
 
-    // タグを配列からStringSetに変換
-    // DynamoDB DocumentClientはJavaScriptの配列をDynamoDBのStringSetに自動変換しない
-    // ただし、送信時にDynamoDBセットとして扱われるように設定されている
     const newArticle = {
       ...article,
       id: article.id || uuidv4(), // IDがない場合は自動生成

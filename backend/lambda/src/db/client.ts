@@ -22,15 +22,15 @@ const devConfig = {
 
 const client = new DynamoDBClient(process.env.ENV === 'development' ? devConfig : {});
 
-// マーシャリング設定を追加して、StringSetをサポート
+// DynamoDBDocumentClientを作成し、基本的なクライアントをラップして高レベルのドキュメントインターフェースを提供
 const docClient = DynamoDBDocumentClient.from(client, {
   marshallOptions: {
-    convertEmptyValues: false,
-    removeUndefinedValues: true,
-    convertClassInstanceToMap: true,
+    convertEmptyValues: false, // 空の値を変換しない
+    removeUndefinedValues: true, // undefined値を削除する
+    convertClassInstanceToMap: true, // クラスインスタンスをマップに変換する
   },
   unmarshallOptions: {
-    wrapNumbers: false,
+    wrapNumbers: false, // 数値をJavaScriptのNumberとして扱い、特別なラッパーを使用しない
   },
 });
 
