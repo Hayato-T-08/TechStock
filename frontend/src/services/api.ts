@@ -5,7 +5,7 @@
 import { Article } from '../../types/Article';
 
 // Honoサーバーのデフォルトポートは5555
-const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5555';
+const API_URL = process.env.API_URL || 'http://localhost:5555';
 
 // 共通のフェッチオプション
 const fetchOptions: RequestInit = {
