@@ -2,9 +2,11 @@ import * as cdk from 'aws-cdk-lib';
 import * as apigw from 'aws-cdk-lib/aws-apigateway';
 import * as dynamodb from 'aws-cdk-lib/aws-dynamodb';
 import * as lambda from 'aws-cdk-lib/aws-lambda';
-import { NodejsFunction } from 'aws-cdk-lib/aws-lambda-nodejs';
+import * as child_process from 'child_process';
 import { Construct } from 'constructs';
 import * as dotenv from 'dotenv';
+import * as fs from 'fs';
+import * as path from 'path';
 
 dotenv.config();
 
@@ -31,11 +33,31 @@ export class BackendStack extends cdk.Stack {
     });
 
     //lambda function
+    const projectRoot = path.join(__dirname, '../..');
+    const backendDir = path.join(projectRoot, 'backend');
 
-    const honoLambda = new NodejsFunction(this, 'techStockLambda', {
-      entry: '../backend/lambda/index.ts',
-      handler: 'handler',
+    // バンドルするためのディレクトリを作成
+    const distDir = path.join(backendDir, 'dist');
+    if (!fs.existsSync(distDir)) {
+      fs.mkdirSync(distDir, { recursive: true });
+    }
+
+    // バックエンドコードをビルド
+    console.log('Building backend code...');
+    try {
+      child_process.execSync(`cd ${backendDir} && npm run build`, {
+        stdio: 'inherit',
+      });
+    } catch (error) {
+      console.error('Failed to build backend code:', error);
+      throw error;
+    }
+
+    // Lambda関数を作成
+    const honoLambda = new lambda.Function(this, 'techStockLambda', {
       runtime: lambda.Runtime.NODEJS_20_X,
+      handler: 'index.handler',
+      code: lambda.Code.fromAsset(path.join(backendDir, 'dist')),
       environment: {
         ENV: process.env.ENV ?? 'production',
         TABLE_NAME: articlesTable.tableName,
