@@ -15,21 +15,20 @@ export class BackendStack extends cdk.Stack {
     super(scope, id, props);
 
     //dynamodb table
-
     const articlesTable = new dynamodb.Table(this, 'ArticlesTable', {
       partitionKey: { name: 'id', type: dynamodb.AttributeType.STRING },
       tableName: 'ArticlesTable',
       billingMode: dynamodb.BillingMode.PROVISIONED,
-      readCapacity: 1,
-      writeCapacity: 1,
+      readCapacity: 5,
+      writeCapacity: 5,
       removalPolicy: cdk.RemovalPolicy.DESTROY,
-    }); //キャパシティーは後で変える
+    });
 
     articlesTable.addGlobalSecondaryIndex({
       indexName: 'TitleIndex',
       partitionKey: { name: 'title', type: dynamodb.AttributeType.STRING },
-      readCapacity: 1,
-      writeCapacity: 1,
+      readCapacity: 5,
+      writeCapacity: 5,
     });
 
     //lambda function
@@ -61,7 +60,11 @@ export class BackendStack extends cdk.Stack {
       environment: {
         ENV: process.env.ENV ?? 'production',
         TABLE_NAME: articlesTable.tableName,
+        FRONTEND_URL: process.env.FRONTEND_URL ?? 'http://localhost:3000',
+        QIITA_API_URL: process.env.QIITA_API_URL ?? 'https://qiita.com/api/v2/items',
+        QIITA_USER_ID: process.env.QIITA_USER_ID ?? 'tech-stock',
       },
+      timeout: cdk.Duration.seconds(60), // タイムアウトを60秒に増加
     });
 
     //dynamodb tableにアクセスするための権限を与える
