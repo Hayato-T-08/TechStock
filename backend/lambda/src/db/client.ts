@@ -38,7 +38,7 @@ const docClient = DynamoDBDocumentClient.from(client, {
 const createArticlesTable = async () => {
   console.log('Articlesテーブル作成を開始...');
   const params = {
-    TableName: 'Articles',
+    TableName: 'ArticlesTable',
     KeySchema: [{ AttributeName: 'id', KeyType: KeyType.HASH }],
     AttributeDefinitions: [
       { AttributeName: 'id', AttributeType: ScalarAttributeType.S },
@@ -87,10 +87,10 @@ const initializeDynamoDB = async () => {
       console.log('既存のテーブル:', TableNames);
 
       // Articlesテーブルの確認と作成
-      if (TableNames && !TableNames.includes('Articles')) {
+      if (TableNames && !TableNames.includes('ArticlesTable')) {
         console.log('Articlesテーブルが存在しないため作成します');
         await createArticlesTable();
-      } else if (TableNames && TableNames.includes('Articles')) {
+      } else if (TableNames && TableNames.includes('ArticlesTable')) {
         console.log('Articlesテーブルは既に存在します');
       } else {
         console.log('テーブル一覧の取得に失敗、Articlesテーブルを作成します');
@@ -107,7 +107,7 @@ const initializeDynamoDB = async () => {
 // テーブル初期化を実行
 initializeDynamoDB();
 
-const TABLE_NAME = 'Articles';
+const TABLE_NAME = process.env.TABLE_NAME || 'ArticlesTable';
 const TITLE_INDEX = 'TitleIndex';
 
 export { docClient, TABLE_NAME, TITLE_INDEX };
