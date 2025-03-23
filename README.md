@@ -14,8 +14,15 @@
 TechStock/
 ├── frontend/        # Next.jsプロジェクト
 ├── backend/         # Honoアプリケーション
+│   └── lambda/      # AWS Lambda関数
 └── infrastructure/  # AWS CDKコード
 ```
+
+## システム機能
+
+- 技術記事のアーカイブと管理
+- タグベースの検索と分類
+- Qiita記事の自動インポート（毎時間実行）
 
 ## 開発方法
 
@@ -81,3 +88,22 @@ docker compose exec localstack sh
 ```
 
 Windowsの場合、`/bin/bash`パスがコンテナ内で正しく解決されない問題があります。`sh`を使うことでこの問題を回避できます。
+
+## バックエンド詳細
+
+### API エンドポイント
+
+- `/api/articles` - 記事の取得・保存・削除
+
+### スケジュールされたタスク
+
+TechStockは以下のスケジュールタスクを実行します：
+
+- **Qiita記事インポート**: EventBridgeで毎時間の1分に実行されるスケジュールタスク。Qiitaからストックした記事を取得し、DynamoDBに保存します。
+
+## インフラストラクチャ
+
+- **DynamoDB**: 記事データを保存
+- **Lambda + API Gateway**: バックエンドAPI
+- **EventBridge**: Qiita記事の定期インポート
+- **CloudFront + S3**: フロントエンドのホスティング
