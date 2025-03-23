@@ -1,6 +1,8 @@
 import * as cdk from 'aws-cdk-lib';
 import * as apigw from 'aws-cdk-lib/aws-apigateway';
 import * as dynamodb from 'aws-cdk-lib/aws-dynamodb';
+import * as events from 'aws-cdk-lib/aws-events';
+import * as targets from 'aws-cdk-lib/aws-events-targets';
 import * as lambda from 'aws-cdk-lib/aws-lambda';
 import * as child_process from 'child_process';
 import { Construct } from 'constructs';
@@ -82,6 +84,20 @@ export class BackendStack extends cdk.Stack {
       description: 'API Gatewayのエンドポイント',
     });
 
-    //あとでEvent-Bridgeのバッチ処理を追加(API gatewayのfetchQiitaを定期実行)
+    //EventBridgeのルールを作成
+    new events.Rule(this, 'fetchQiitaRule', {
+      schedule: events.Schedule.cron({
+        minute: '0',
+        hour: '0',
+      }), //毎日0時0分に実行
+      targets: [
+        new targets.LambdaFunction(honoLambda, {
+          event: events.RuleTargetInput.fromObject({
+            source: 'eventbridge',
+            action: 'fetchQiita',
+          }),
+        }),
+      ],
+    });
   }
 }
