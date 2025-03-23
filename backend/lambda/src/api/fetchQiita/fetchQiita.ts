@@ -13,7 +13,8 @@ interface SimplifiedQiitaArticle {
   tags: Array<{ name: string }>;
 }
 
-const fetchQiita = new Hono().post('/', async (c) => {
+// Qiita記事を取得する関数（EventBridge用）
+export const fetchQiitaArticles = async () => {
   const user_id = process.env.QIITA_USER_ID;
   const baseUrl = process.env.QIITA_API_URL + '/users/' + user_id + '/stocks';
   const perPage = 20; // ページサイズを小さくして一度に処理するデータ量を削減
@@ -178,11 +179,22 @@ const fetchQiita = new Hono().post('/', async (c) => {
       }
     }
 
-    return c.json({
+    return {
       total: articles.length,
       new: newArticles.length,
       saved: savedCount,
-    });
+    };
+  } catch (err) {
+    console.error('処理エラー:', err);
+    throw err;
+  }
+};
+
+// API Gateway用のHonoルーター
+const fetchQiita = new Hono().post('/', async (c) => {
+  try {
+    const result = await fetchQiitaArticles();
+    return c.json(result);
   } catch (err) {
     console.error('処理エラー:', err);
     return c.json(

@@ -2,7 +2,6 @@ import { Hono } from 'hono';
 import { cors } from 'hono/cors';
 import { logger } from 'hono/logger';
 import articles from './api/articles/articles';
-import fetchQiita from './api/fetchQiita/fetchQiita';
 
 const app = new Hono();
 
@@ -23,6 +22,5 @@ app.use('*', logger());
 
 app.get('/', (c) => c.text('TechStock API is running'));
 app.route('/api/articles', articles);
-app.route('/api/fetchQiita', fetchQiita);
 
 export default app;
