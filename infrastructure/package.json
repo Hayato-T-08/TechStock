@@ -8,7 +8,13 @@
     "build": "tsc",
     "watch": "tsc -w",
     "test": "jest",
-    "cdk": "cdk"
+    "cdk": "cdk",
+    "build:frontend": "cd ../frontend && npm run build",
+    "build:backend": "cd ../backend && npm run build",
+    "build:all": "npm run build:frontend && npm run build:backend",
+    "deploy:frontend": "npm run build:frontend && npm run cdk deploy",
+    "deploy:backend": "npm run build:backend && npm run cdk deploy",
+    "deploy": "npm run build:all && npm run cdk deploy"
   },
   "devDependencies": {
     "@types/jest": "^29.5.14",
