@@ -21,6 +21,6 @@ app.use(
 app.use('*', logger());
 
 app.get('/', (c) => c.text('TechStock API is running'));
-app.route('/api/articles', articles);
+app.route('/articles', articles);
 
 export default app;
