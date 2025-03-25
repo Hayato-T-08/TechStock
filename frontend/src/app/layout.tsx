@@ -14,8 +14,17 @@ const geistMono = Geist_Mono({
 });
 
 export const metadata: Metadata = {
-  title: 'TechStock - 技術記事管理システム',
-  description: '技術記事のアーカイブとタグ付けのための管理システム',
+  title: 'TechStock',
+  description: '技術記事管理システム',
+  icons: {
+    icon: [
+      {
+        url: '/icon.png',
+        type: 'image/png',
+        sizes: '32x32',
+      },
+    ],
+  },
 };
 
 export default function RootLayout({
