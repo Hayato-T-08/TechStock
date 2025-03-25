@@ -57,3 +57,8 @@ jobs:
           cd infrastructure
           npm ci
           npm run cdk:deploy:all
+        env:
+          QIITA_USER_ID: ${{ secrets.QIITA_USER_ID }}
+          QIITA_API_URL: 'https://qiita.com/api/v2'
+          FRONTEND_URL: ${{ secrets.FRONTEND_URL }}
+          ENV: 'production'

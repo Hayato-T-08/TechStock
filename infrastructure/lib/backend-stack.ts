@@ -43,7 +43,7 @@ export class BackendStack extends cdk.Stack {
         ENV: process.env.ENV ?? 'production',
         TABLE_NAME: articlesTable.tableName,
         FRONTEND_URL: process.env.FRONTEND_URL ?? 'http://localhost:3000',
-        QIITA_API_URL: process.env.QIITA_API_URL ?? 'https://qiita.com/api/v2/items',
+        QIITA_API_URL: process.env.QIITA_API_URL ?? 'https://qiita.com/api/v2',
         QIITA_USER_ID: process.env.QIITA_USER_ID ?? 'tech-stock',
       },
       timeout: cdk.Duration.seconds(60), // タイムアウトを60秒に増加
