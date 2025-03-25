@@ -56,4 +56,4 @@ jobs:
         run: |
           cd infrastructure
           npm ci
-          npm run cdk deploy -- --require-approval never
+          npm run cdk deploy --all --require-approval never
