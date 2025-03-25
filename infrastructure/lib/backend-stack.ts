@@ -67,8 +67,8 @@ export class BackendStack extends cdk.Stack {
     //EventBridgeのルールを作成
     new events.Rule(this, 'fetchQiitaRule', {
       schedule: events.Schedule.cron({
-        minute: '15',
-        hour: '30',
+        minute: '30',
+        hour: '15',
       }), //毎日0時30分に実行
       targets: [
         new targets.LambdaFunction(honoLambda, {
