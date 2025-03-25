@@ -7,7 +7,9 @@ import {
   ScalarAttributeType,
 } from '@aws-sdk/client-dynamodb';
 import { DynamoDBDocumentClient } from '@aws-sdk/lib-dynamodb';
-import process from 'process';
+import { config } from 'dotenv';
+
+config({ path: process.env.ENV === 'production' ? '.env.production' : '.env' });
 
 // ローカルにアクセスするためだけのダミーアクセスキーを設定。
 // 何も権限情報も存在しない。
