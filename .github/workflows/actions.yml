@@ -3,21 +3,15 @@ name: Infrastructure Deploy
 on:
   push:
     branches: [main]
-    paths:
-      - 'infrastructure/**'
-      - '.github/workflows/infrastructure-deploy.yml'
   pull_request:
     branches: [main]
-    paths:
-      - 'infrastructure/**'
-      - '.github/workflows/infrastructure-deploy.yml'
 
 jobs:
   deploy:
     runs-on: ubuntu-latest
     defaults:
       run:
-        working-directory: ./infrastructure
+        working-directory: ./
 
     steps:
       - uses: actions/checkout@v4
@@ -31,6 +25,18 @@ jobs:
       - name: Install dependencies
         run: npm ci
 
+      - name: Build Frontend
+        run: |
+          cd frontend
+          npm ci
+          npm run build
+
+      - name: Build Backend
+        run: |
+          cd backend
+          npm ci
+          npm run build
+
       - name: Configure AWS credentials
         uses: aws-actions/configure-aws-credentials@v4
         with:
@@ -41,9 +47,11 @@ jobs:
       - name: CDK Diff (PR only)
         if: github.event_name == 'pull_request'
         run: |
+          cd infrastructure
           npm run cdk diff
 
       - name: Deploy CDK stack
         if: github.event_name == 'push'
         run: |
+          cd infrastructure
           npm run cdk deploy -- --require-approval never
