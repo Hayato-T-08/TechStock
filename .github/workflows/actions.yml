@@ -56,4 +56,4 @@ jobs:
         run: |
           cd infrastructure
           npm ci
-          npm run deploy:all
+          npm run cdk:deploy:all
