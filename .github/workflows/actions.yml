@@ -26,12 +26,20 @@ jobs:
         run: npm ci
 
       - name: Build Frontend
+        env:
+          FRONTEND_URL: ${{ secrets.FRONTEND_URL }}
+          ENV: 'production'
         run: |
           cd frontend
           npm ci
           npm run build
 
       - name: Build Backend
+        env:
+          QIITA_USER_ID: ${{ secrets.QIITA_USER_ID }}
+          QIITA_API_URL: 'https://qiita.com/api/v2'
+          FRONTEND_URL: ${{ secrets.FRONTEND_URL }}
+          ENV: 'production'
         run: |
           cd backend
           npm ci

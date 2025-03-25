@@ -9,7 +9,7 @@ app.use('*', logger());
 app.use(
   '*',
   cors({
-    origin: [process.env.FRONTEND_URL || '*', 'http://localhost:3000'],
+    origin: ['https://d19k2r3nvtvw5r.cloudfront.net', 'http://localhost:3000'],
     credentials: true,
     allowMethods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
     allowHeaders: ['Content-Type', 'Authorization'],
