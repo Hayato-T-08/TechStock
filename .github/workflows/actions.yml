@@ -54,6 +54,11 @@ jobs:
 
       - name: CDK Diff (PR only)
         if: github.event_name == 'pull_request'
+        env:
+          QIITA_USER_ID: ${{ secrets.QIITA_USER_ID }}
+          QIITA_API_URL: 'https://qiita.com/api/v2'
+          FRONTEND_URL: ${{ secrets.FRONTEND_URL }}
+          ENV: 'production'
         run: |
           cd infrastructure
           npm ci
