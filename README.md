@@ -2,6 +2,10 @@
 
 技術記事管理システム
 
+## アーキテクチャ
+
+![TechStock Architecture](drawio/techStockArchitecture.drawio.png)
+
 ## プロジェクト構成
 
 - **フロントエンド**: Next.js (SSG) - CloudFront + S3 にデプロイ
