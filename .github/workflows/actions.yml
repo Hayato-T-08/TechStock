@@ -48,10 +48,12 @@ jobs:
         if: github.event_name == 'pull_request'
         run: |
           cd infrastructure
+          npm ci
           npm run cdk diff
 
       - name: Deploy CDK stack
         if: github.event_name == 'push'
         run: |
           cd infrastructure
+          npm ci
           npm run cdk deploy -- --require-approval never
