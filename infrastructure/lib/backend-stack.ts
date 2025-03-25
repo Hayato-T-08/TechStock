@@ -43,7 +43,7 @@ export class BackendStack extends cdk.Stack {
         ENV: process.env.ENV ?? 'production',
         TABLE_NAME: articlesTable.tableName,
         FRONTEND_URL: process.env.FRONTEND_URL ?? 'http://localhost:3000',
-        QIITA_API_URL: process.env.QIITA_API_URL ?? 'https://qiita.com/api/v2/items',
+        QIITA_API_URL: process.env.QIITA_API_URL ?? 'https://qiita.com/api/v2',
         QIITA_USER_ID: process.env.QIITA_USER_ID ?? 'tech-stock',
       },
       timeout: cdk.Duration.seconds(60), // タイムアウトを60秒に増加
@@ -67,9 +67,9 @@ export class BackendStack extends cdk.Stack {
     //EventBridgeのルールを作成
     new events.Rule(this, 'fetchQiitaRule', {
       schedule: events.Schedule.cron({
-        minute: '0',
-        hour: '0',
-      }), //毎日0時0分に実行
+        minute: '30',
+        hour: '15',
+      }), //毎日0時30分に実行
       targets: [
         new targets.LambdaFunction(honoLambda, {
           event: events.RuleTargetInput.fromObject({
