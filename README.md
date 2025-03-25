@@ -81,3 +81,13 @@ docker compose exec localstack sh
 ```
 
 Windowsの場合、`/bin/bash`パスがコンテナ内で正しく解決されない問題があります。`sh`を使うことでこの問題を回避できます。
+
+## バッチ処理
+
+AWS EventBridgeを使用して、以下のバッチ処理が定期実行されます：
+
+- **Qiita記事取得処理**
+  - 実行時間: 毎日午前0時（JST）
+  - 処理内容: 指定されたQiitaユーザーの記事を取得しDynamoDBに保存
+  - 実行方法: EventBridgeのcronスケジュールにより自動実行
+  - 設定場所: `infrastructure/lib/backend-stack.ts`のEventBridgeルールで定義

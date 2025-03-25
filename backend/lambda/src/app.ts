@@ -5,22 +5,20 @@ import articles from './api/articles/articles';
 
 const app = new Hono();
 
-// CORSミドルウェアを追加
+app.use('*', logger());
 app.use(
   '*',
   cors({
-    origin: ['http://localhost:3000', process.env.FRONTEND_URL || '*'],
-    allowHeaders: ['Content-Type', 'Authorization'],
+    origin: ['https://d19k2r3nvtvw5r.cloudfront.net', 'http://localhost:3000'],
+    credentials: true,
     allowMethods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
+    allowHeaders: ['Content-Type', 'Authorization'],
     exposeHeaders: ['Content-Length', 'X-Kuma-Revision'],
     maxAge: 600,
-    credentials: true,
   })
 );
 
-app.use('*', logger());
-
 app.get('/', (c) => c.text('TechStock API is running'));
-app.route('/api/articles', articles);
+app.route('/articles', articles);
 
 export default app;

@@ -5,7 +5,7 @@
 import { Article } from '../../types/Article';
 
 // Honoサーバーのデフォルトポートは5555
-const API_URL = process.env.API_URL || 'http://localhost:5555';
+const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5555';
 
 // 共通のフェッチオプション
 const fetchOptions: RequestInit = {
@@ -18,7 +18,7 @@ const fetchOptions: RequestInit = {
 // 全記事取得
 export async function fetchArticles(): Promise<Article[]> {
   try {
-    const response = await fetch(`${API_URL}/api/articles`, fetchOptions);
+    const response = await fetch(`${API_URL}/articles`, fetchOptions);
 
     if (!response.ok) {
       throw new Error(`API error: ${response.status}`);
@@ -34,7 +34,7 @@ export async function fetchArticles(): Promise<Article[]> {
 // 記事詳細取得
 export async function fetchArticleById(id: string): Promise<Article | null> {
   try {
-    const response = await fetch(`${API_URL}/api/articles/${id}`, fetchOptions);
+    const response = await fetch(`${API_URL}/articles/${id}`, fetchOptions);
 
     if (!response.ok) {
       throw new Error(`API error: ${response.status}`);
@@ -60,7 +60,7 @@ export async function searchArticles(params: { title?: string; tag?: string }): 
       queryParams.append('tag', params.tag);
     }
 
-    const url = `${API_URL}/api/articles/search?${queryParams.toString()}`;
+    const url = `${API_URL}/articles/search?${queryParams.toString()}`;
     const response = await fetch(url, fetchOptions);
 
     if (!response.ok) {
@@ -79,7 +79,7 @@ export async function createArticle(
   article: Omit<Article, 'id' | 'createdAt'>
 ): Promise<Article | null> {
   try {
-    const response = await fetch(`${API_URL}/api/articles`, {
+    const response = await fetch(`${API_URL}/articles`, {
       ...fetchOptions,
       method: 'POST',
       body: JSON.stringify(article),
@@ -102,7 +102,7 @@ export async function updateArticle(
   article: Partial<Omit<Article, 'id' | 'createdAt'>>
 ): Promise<Article | null> {
   try {
-    const response = await fetch(`${API_URL}/api/articles/${id}`, {
+    const response = await fetch(`${API_URL}/articles/${id}`, {
       ...fetchOptions,
       method: 'PUT',
       body: JSON.stringify(article),
@@ -122,7 +122,7 @@ export async function updateArticle(
 // 記事削除
 export async function deleteArticle(id: string): Promise<boolean> {
   try {
-    const response = await fetch(`${API_URL}/api/articles/${id}`, {
+    const response = await fetch(`${API_URL}/articles/${id}`, {
       ...fetchOptions,
       method: 'DELETE',
     });

@@ -2,9 +2,6 @@
 import * as cdk from 'aws-cdk-lib';
 import { BackendStack } from '../lib/backend-stack';
 import { FrontendStack } from '../lib/frontend-stack';
-import * as dotenv from 'dotenv';
-
-dotenv.config();
 
 const app = new cdk.App();
 
